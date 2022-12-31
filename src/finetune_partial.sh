@@ -60,7 +60,11 @@ if [ $TASK != "execution_error_with_line" ]; then
         --load_best_model_at_end \
         --metric_for_best_model top1_accuracy \
         --logging_first_step \
+<<<<<<< HEAD
         --eval_steps 1 \
+=======
+        --eval_steps 10 \
+>>>>>>> f5d4db9674d2ad9a5d76ba6e7c05b4eca5ae0310
         --save_steps 10
 
 else

@@ -153,9 +153,11 @@ class ModelArguments:
 
 
 def compute_metrics(p: EvalPrediction, compute_ranker_accuracy=False, grouped_indices=None, grouped_labels=None, pass_idx=1):
-    # grouped_indices is a two-dimensional array where each row represents the indices of various datapoints in p that have 
-    # the same prompt 
-    # grouped_labels is the actual ternary labels of <prompt, completion> datapoints at the indices provided by grouped_indices
+    # grouped_indices is a two-dimensional array where each row represents the indices 
+    # of various datapoints in p that have the same prompt 
+    
+    # grouped_labels is the actual ternary labels of <prompt, completion> 
+    # datapoints at the indices provided by grouped_indices
 
     pred_raw, labels = p    
     if compute_ranker_accuracy:
@@ -306,7 +308,6 @@ def main():
 
     raw_datasets = load_dataset("json", data_files=data_files, cache_dir=model_args.cache_dir)
 
-    print(raw_datasets)
     # Labels
     if data_args.labels_file != None:
         # read labels from file
@@ -341,6 +342,9 @@ def main():
     # Load pretrained model and tokenizer
     tokenizer = RobertaTokenizer.from_pretrained(model_args.model_name_or_path, cache_dir=model_args.cache_dir, use_fast=model_args.use_fast_tokenizer,)    
     model = RobertaForSequenceClassification.from_pretrained(model_args.model_name_or_path, num_labels=num_labels, cache_dir=model_args.cache_dir)
+
+    # import pdb
+    # pdb.set_trace()
 
     # Preprocessing the raw datasets
     sentence1_key = data_args.sentence1_key #"model_prompt"

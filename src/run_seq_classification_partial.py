@@ -167,7 +167,7 @@ def compute_metrics(p: EvalPrediction, compute_ranker_accuracy=False, grouped_in
     # grouped_labels is the actual ternary labels of <prompt, completion> 
     # datapoints at the indices provided by grouped_indices
 
-    pred_raw, labels = p 
+    pred_raw, labels = p    
     if compute_ranker_accuracy:
         # we will also compute the actual accuracy of the ranker
         pred_softmax = scipy.special.softmax(pred_raw, axis=1)
@@ -317,8 +317,6 @@ def main():
     raw_datasets = load_dataset("json", data_files=data_files, cache_dir=model_args.cache_dir)
     print("Creating extended dataset")
     raw_datasets = create_extended_dataset(raw_datasets, n=data_args.num_partials) # new 
-    # save dataset
-
 
     # Labels
     if data_args.labels_file != None:
