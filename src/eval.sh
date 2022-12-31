@@ -24,7 +24,7 @@ else
     LABEL_KEY=${TASK}_label
 fi
 
-if [ $TASK != "execution_error_with_line" ]; then 
+if [ $TASK != "execution_error_with_line" ]; then
     python run_seq_classification.py \
         --output_dir $MODEL_DIR \
         --cache_dir $MODEL_CACHE_DIR \
@@ -36,9 +36,10 @@ if [ $TASK != "execution_error_with_line" ]; then
         --labels_file $DATA_DIR/$LABELS_SUFFIX \
         --max_seq_length 512 \
         --do_predict \
-        --per_device_eval_batch_size 32 \
+        --per_device_eval_batch_size 256 \
         --predict_suffix $PREDICT_FILE_SUFFIX \
         --overwrite_cache \
+        --max_predict_samples 5000 \
 
 else
     LABELS_SUFFIX=labels_execution_error.txt
@@ -58,5 +59,5 @@ else
         --per_device_eval_batch_size 32 \
         --predict_suffix $PREDICT_FILE_SUFFIX \
         --overwrite_cache \
-        
-fi 
+
+fi
