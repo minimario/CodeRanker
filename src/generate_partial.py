@@ -35,7 +35,7 @@ def create_extended_dataset(dataset, n=3):
             dataset_mapped = dataset_split.map(add_partial, with_indices=True)
             to_concatenate.append(dataset_mapped)
         
-        dataset_new[split] = dataset_concatenate = concatenate_datasets(to_concatenate)
+        dataset_new[split] = concatenate_datasets(to_concatenate)
     
     print("Sizes of new dataset:")
     for split in dataset_new:

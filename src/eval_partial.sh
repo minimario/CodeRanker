@@ -36,7 +36,8 @@ if [ $TASK != "execution_error_with_line" ]; then
         --labels_file $DATA_DIR/$LABELS_SUFFIX \
         --max_seq_length 512 \
         --do_predict \
-        --per_device_eval_batch_size 32 \
+        --per_device_eval_batch_size 128 \
+        --max_predict_samples 1000 \
         --predict_suffix $PREDICT_FILE_SUFFIX \
         --overwrite_cache \
 
