@@ -326,8 +326,8 @@ def main():
         logger.info(f"load a local file for {key}: {data_files[key]}")
 
     raw_datasets = load_dataset("json", data_files=data_files, cache_dir=model_args.cache_dir)
-    print("Creating extended dataset")
-    raw_datasets = create_extended_dataset(raw_datasets, n=data_args.num_partials) # new 
+    # print("Creating extended dataset")
+    # raw_datasets = create_extended_dataset(raw_datasets, n=data_args.num_partials) # new 
 
     # Labels
     if data_args.labels_file != None:
@@ -343,10 +343,10 @@ def main():
     if data_args.grouped_indices_file != None:
         orig_grouped_indices = np.load(data_args.grouped_indices_file)
         orig_grouped_labels = np.load(data_args.grouped_labels_file)
-        print("Making new grouped indices and labels")
-        grouped_indices, grouped_labels = create_grouped_indices(orig_grouped_indices, \
-                                            orig_grouped_labels, 
-                                            n=data_args.num_partials)
+        # print("Making new grouped indices and labels")
+        # grouped_indices, grouped_labels = create_grouped_indices(orig_grouped_indices, \
+        #                                     orig_grouped_labels, 
+        #                                     n=data_args.num_partials)
     else:
         grouped_indices = None
         grouped_labels = None
