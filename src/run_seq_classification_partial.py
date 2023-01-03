@@ -160,7 +160,7 @@ class ModelArguments:
     )
 
 
-def compute_metrics(p: EvalPrediction, compute_ranker_accuracy=False, grouped_indices=None, grouped_labels=None, pass_idx=1):
+def compute_metrics(p: EvalPrediction, compute_ranker_accuracy=False, grouped_indices=None, grouped_labels=None, pass_idx=1, num_labels=3):
     # grouped_indices is a two-dimensional array where each row represents the indices 
     # of various datapoints in p that have the same prompt 
     
@@ -187,15 +187,26 @@ def compute_metrics(p: EvalPrediction, compute_ranker_accuracy=False, grouped_in
     pred_binary = pred == pass_idx
     labels_binary = labels == pass_idx
     accuracy = accuracy_score(y_true=labels_binary, y_pred=pred_binary)
-    recall = recall_score(y_true=labels_binary, y_pred=pred_binary, average='micro')
-    precision = precision_score(y_true=labels_binary, y_pred=pred_binary, average='micro')
-    f1 = f1_score(y_true=labels_binary, y_pred=pred_binary, average='micro')
+    if num_labels > 2:
+        recall = recall_score(y_true=labels_binary, y_pred=pred_binary, average='micro')
+        precision = precision_score(y_true=labels_binary, y_pred=pred_binary, average='micro')
+        f1 = f1_score(y_true=labels_binary, y_pred=pred_binary, average='micro')
+    else:
+        recall = recall_score(y_true=labels_binary, y_pred=pred_binary)
+        precision = precision_score(y_true=labels_binary, y_pred=pred_binary)
+        f1 = f1_score(y_true=labels_binary, y_pred=pred_binary)
 
     # multi class predictions
-    accuracy_mc = accuracy_score(y_true=labels, y_pred=pred)
-    recall_mc = recall_score(y_true=labels, y_pred=pred, average='micro')
-    precision_mc = precision_score(y_true=labels, y_pred=pred, average='micro')
-    f1_mc = f1_score(y_true=labels, y_pred=pred, average='micro')
+    if num_labels > 2:
+        accuracy_mc = accuracy_score(y_true=labels, y_pred=pred)
+        recall_mc = recall_score(y_true=labels, y_pred=pred, average='micro')
+        precision_mc = precision_score(y_true=labels, y_pred=pred, average='micro')
+        f1_mc = f1_score(y_true=labels, y_pred=pred, average='micro')
+    else:
+        accuracy_mc = accuracy
+        recall_mc = recall
+        precision_mc = precision
+        f1_mc = f1 
 
     metrics = {'f1': f1,
                'precision': precision,
@@ -522,7 +533,7 @@ def main():
             args=training_args,
             train_dataset=train_dataset if training_args.do_train else None,
             eval_dataset=eval_dataset if training_args.do_eval else None,
-            compute_metrics=lambda x: compute_metrics(x, True, grouped_indices, grouped_labels, pass_idx),
+            compute_metrics=lambda x: compute_metrics(x, True, grouped_indices, grouped_labels, pass_idx, num_labels),
             tokenizer=tokenizer,
             data_collator=data_collator,
         )
@@ -532,7 +543,7 @@ def main():
             args=training_args,
             train_dataset=train_dataset if training_args.do_train else None,
             eval_dataset=eval_dataset if training_args.do_eval else None,
-            compute_metrics=lambda x: compute_metrics(x, True, grouped_indices, grouped_labels, pass_idx),
+            compute_metrics=lambda x: compute_metrics(x, True, grouped_indices, grouped_labels, pass_idx, num_labels),
             tokenizer=tokenizer,
             data_collator=data_collator,
         )
@@ -597,7 +608,7 @@ def main():
         args=training_args,
         train_dataset=train_dataset if training_args.do_train else None,
         eval_dataset=eval_dataset if training_args.do_eval else None,
-        compute_metrics= lambda x: compute_metrics(x, False, grouped_indices, grouped_labels, pass_idx),
+        compute_metrics= lambda x: compute_metrics(x, False, grouped_indices, grouped_labels, pass_idx, num_labels),
         tokenizer=tokenizer,
         data_collator=data_collator,
     )
