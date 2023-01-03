@@ -341,8 +341,8 @@ def main():
 
     # grouped indices/labels for measuring actual accuracy of ranking models 
     if data_args.grouped_indices_file != None:
-        orig_grouped_indices = np.load(data_args.grouped_indices_file)
-        orig_grouped_labels = np.load(data_args.grouped_labels_file)
+        grouped_indices = np.load(data_args.grouped_indices_file)
+        grouped_labels = np.load(data_args.grouped_labels_file)
         # print("Making new grouped indices and labels")
         # grouped_indices, grouped_labels = create_grouped_indices(orig_grouped_indices, \
         #                                     orig_grouped_labels, 
@@ -479,7 +479,7 @@ def main():
             batched=True,
             load_from_cache_file=not data_args.overwrite_cache,
             desc="Running tokenizer on train dataset",
-            num_proc = 20,
+            num_proc = 64,
         )
     if training_args.do_eval:
         if "validation" not in raw_datasets :
@@ -492,7 +492,7 @@ def main():
             batched=True,
             load_from_cache_file=not data_args.overwrite_cache,
             desc="Running tokenizer on eval dataset",
-            num_proc = 20,
+            num_proc = 64,
         )
             
 
