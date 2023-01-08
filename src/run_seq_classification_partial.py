@@ -205,6 +205,7 @@ def compute_metrics_new(p, grouped_indices=None, grouped_labels=None):
         "top10_3": top10_3
     }
 
+    return metrics
 
 def compute_metrics(p: EvalPrediction, compute_ranker_accuracy=False, grouped_indices=None, grouped_labels=None, pass_idx=1, num_labels=3):
     # grouped_indices is a two-dimensional array where each row represents the indices 
