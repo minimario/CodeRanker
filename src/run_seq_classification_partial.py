@@ -118,9 +118,9 @@ class DataTrainingArguments:
         metadata={"help": "Name of the key for label in the dataset" },
     )
 
-    def __post_init__(self):
-        if (self.train_file is None and self.validation_file is None) and self.test_file is None:
-            raise ValueError("Need either a GLUE task, a training/validation file or a dataset name.")
+    # def __post_init__(self):
+    #     if (self.train_file is None and self.validation_file is None) and self.test_file is None:
+    #         raise ValueError("Need either a GLUE task, a training/validation file or a dataset name.")
         
 
 
@@ -158,6 +158,53 @@ class ModelArguments:
             "with private models)."
         },
     )
+
+def compute_metrics_new(p, grouped_indices=None, grouped_labels=None):
+    pred_raw, labels = p
+
+    # calculate contrastive accuracy
+    cont_preds = pred_raw[0:2622]
+    pred_softmax = scipy.special.softmax(cont_preds, axis=1)
+    pred_prob = pred_softmax[:, 1].reshape(-1, 2)
+    pred_max = np.argmax(pred_prob, axis=1)
+    correct = np.count_nonzero(pred_max == 0)
+    total = pred_prob.shape[0]
+    contrastive_acc = correct / total
+
+    # calculate ll
+    acc_preds = pred_raw[2622:]
+    pred_softmax = scipy.special.softmax(acc_preds, axis=1)
+    pred_prob = pred_softmax[:, 1]
+    prob_fun = lambda x: pred_prob[x] if x >=0 else 0 
+    prob_fun = np.vectorize(prob_fun)
+    grouped_prob = prob_fun(grouped_indices) # group prob predicted by task
+
+    def topk_acc(k):
+        best_k = np.argsort(grouped_prob, axis=1)[:, -k:]
+        topk_label = grouped_labels[np.arange(grouped_labels.shape[0])[:, None], best_k]
+        scores = (topk_label == "Correct").mean(axis=1)
+        acc_0, acc_1, acc_2, acc_3 = np.mean(scores[0:279]), np.mean(scores[279:558]), np.mean(scores[558:837]), np.mean(scores[837:1124])
+        return acc_0, acc_1, acc_2, acc_3
+    
+    top1_0, top1_1, top1_2, top1_3 = topk_acc(1)
+    top3_0, top3_1, top3_2, top3_3 = topk_acc(3)
+    top10_0, top10_1, top10_2, top10_3 = topk_acc(10)
+
+    metrics = {
+        "contrastive_acc": contrastive_acc,
+        "top1_0": top1_0,
+        "top1_1": top1_1,
+        "top1_2": top1_2,
+        "top1_3": top1_3,
+        "top3_0": top3_0,
+        "top3_1": top3_1,
+        "top3_2": top3_2,
+        "top3_3": top3_3,
+        "top10_0": top10_0,
+        "top10_1": top10_1,
+        "top10_2": top10_2,
+        "top10_3": top10_3
+    }
 
 
 def compute_metrics(p: EvalPrediction, compute_ranker_accuracy=False, grouped_indices=None, grouped_labels=None, pass_idx=1, num_labels=3):
@@ -325,7 +372,8 @@ def main():
     for key in data_files.keys():
         logger.info(f"load a local file for {key}: {data_files[key]}")
 
-    raw_datasets = load_dataset("json", data_files=data_files, cache_dir=model_args.cache_dir)
+    # from datasets import load_dataset
+    # raw_datasets = load_dataset("json", data_files=data_files, cache_dir=model_args.cache_dir)
     # print("Creating extended dataset")
     # raw_datasets = create_extended_dataset(raw_datasets, n=data_args.num_partials) # new 
 
@@ -481,10 +529,22 @@ def main():
             desc="Running tokenizer on train dataset",
             num_proc = 64,
         )
+
+    import os
+    from datasets import load_dataset, concatenate_datasets
+    data_path = "/scratch/gua/Documents2/apps"
+    data_files_cont = {"cont": os.path.join(data_path, "val_contrastive_metric.json")}
+    data_files_acc = {"acc": os.path.join(data_path, "val_acc_metric.json")}
+
+    vc = load_dataset("json", data_files=data_files_cont)
+    va = load_dataset("json", data_files=data_files_acc)
+    va = va.remove_columns(["percentage"])
+    eval_dataset = concatenate_datasets([vc["cont"], va["acc"]])
+
     if training_args.do_eval:
-        if "validation" not in raw_datasets :
-            raise ValueError("--do_eval requires a validation dataset")
-        eval_dataset = raw_datasets["validation"]
+        # if "validation" not in raw_datasets :
+        #     raise ValueError("--do_eval requires a validation dataset")
+        # eval_dataset = raw_datasets["validation"]
         if data_args.max_eval_samples is not None:
             eval_dataset = eval_dataset.select(range(data_args.max_eval_samples))
         eval_dataset = eval_dataset.map(
@@ -492,7 +552,7 @@ def main():
             batched=True,
             load_from_cache_file=not data_args.overwrite_cache,
             desc="Running tokenizer on eval dataset",
-            num_proc = 64,
+            num_proc = 20,
         )
             
 
@@ -533,7 +593,7 @@ def main():
             args=training_args,
             train_dataset=train_dataset if training_args.do_train else None,
             eval_dataset=eval_dataset if training_args.do_eval else None,
-            compute_metrics=lambda x: compute_metrics(x, True, grouped_indices, grouped_labels, pass_idx, num_labels),
+            compute_metrics=lambda x: compute_metrics_new(x, grouped_indices, grouped_labels),
             tokenizer=tokenizer,
             data_collator=data_collator,
         )
@@ -543,7 +603,7 @@ def main():
             args=training_args,
             train_dataset=train_dataset if training_args.do_train else None,
             eval_dataset=eval_dataset if training_args.do_eval else None,
-            compute_metrics=lambda x: compute_metrics(x, True, grouped_indices, grouped_labels, pass_idx, num_labels),
+            compute_metrics=lambda x: compute_metrics_new(x, grouped_indices, grouped_labels),
             tokenizer=tokenizer,
             data_collator=data_collator,
         )
@@ -608,7 +668,7 @@ def main():
         args=training_args,
         train_dataset=train_dataset if training_args.do_train else None,
         eval_dataset=eval_dataset if training_args.do_eval else None,
-        compute_metrics= lambda x: compute_metrics(x, False, grouped_indices, grouped_labels, pass_idx, num_labels),
+        compute_metrics= lambda x: compute_metrics_new(x, grouped_indices, grouped_labels),
         tokenizer=tokenizer,
         data_collator=data_collator,
     )
