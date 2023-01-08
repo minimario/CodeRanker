@@ -27,6 +27,7 @@ from reindent import run as run_reindent
 import io
 import pdb
 import scipy
+import wandb
 
 from generate_partial import create_extended_dataset, create_grouped_indices
 
@@ -204,6 +205,8 @@ def compute_metrics_new(p, grouped_indices=None, grouped_labels=None):
         "top10_2": top10_2,
         "top10_3": top10_3
     }
+
+    return metrics
 
 
 def compute_metrics(p: EvalPrediction, compute_ranker_accuracy=False, grouped_indices=None, grouped_labels=None, pass_idx=1, num_labels=3):
@@ -518,7 +521,8 @@ def main():
         
 
     if training_args.do_train:
-        data_path = "/scratch/gua/Documents2/apps/train_partials_introductory_dedup"
+        data_path = "/home/gridsan/agu/Documents/apps/train_partials_introductory_dedup"
+        # data_path = "/scratch/gua/Documents2/apps/train_partials_introductory_dedup"
         train_dataset = load_from_disk(data_path)
         if data_args.max_train_samples is not None:
             train_dataset = train_dataset.select(range(data_args.max_train_samples))
@@ -532,7 +536,8 @@ def main():
 
 
     if training_args.do_eval:
-        data_path = "/scratch/gua/Documents2/apps"
+        data_path = "/home/gridsan/agu/Documents/apps"
+        # data_path = "/scratch/gua/Documents2/apps"
         data_files_cont = {"cont": os.path.join(data_path, "val_contrastive_metric.json")}
         data_files_acc = {"acc": os.path.join(data_path, "val_acc_metric.json")}
 
@@ -700,3 +705,5 @@ def main():
    
 if __name__ == "__main__":
     main()
+    # initialize wandb
+    
