@@ -1,5 +1,3 @@
-import datasets
-from datasets import load_dataset
 
 import transformers
 from transformers import RobertaTokenizer, RobertaConfig, RobertaModel, RobertaForSequenceClassification
@@ -19,6 +17,7 @@ import os
 import sys
 import logging
 
+from datasets import load_dataset, load_from_disk, concatenate_datasets
 from dataclasses import dataclass, field
 from typing import Optional
 import random
@@ -360,22 +359,23 @@ def main():
     
     # Loading a dataset from your local files.
     # CSV/JSON training and evaluation files are needed.
-    data_files = {}
-    if training_args.do_train and data_args.train_file != None:
-        data_files["train"] = data_args.train_file
-    if training_args.do_eval and data_args.validation_file != None:
-        data_files["validation"] = data_args.validation_file
-    if training_args.do_predict and data_args.test_file != None:
-        data_files["test"] = data_args.test_file
+    # data_files = {}
+    # if training_args.do_train and data_args.train_file != None:
+    #     data_files["train"] = data_args.train_file
+    # if training_args.do_eval and data_args.validation_file != None:
+    #     data_files["validation"] = data_args.validation_file
+    # if training_args.do_predict and data_args.test_file != None:
+    #     data_files["test"] = data_args.test_file
 
 
-    for key in data_files.keys():
-        logger.info(f"load a local file for {key}: {data_files[key]}")
+    # for key in data_files.keys():
+    #     logger.info(f"load a local file for {key}: {data_files[key]}")
 
     # from datasets import load_dataset
     # raw_datasets = load_dataset("json", data_files=data_files, cache_dir=model_args.cache_dir)
     # print("Creating extended dataset")
     # raw_datasets = create_extended_dataset(raw_datasets, n=data_args.num_partials) # new 
+
 
     # Labels
     if data_args.labels_file != None:
@@ -396,6 +396,7 @@ def main():
         #                                     orig_grouped_labels, 
         #                                     n=data_args.num_partials)
     else:
+        raise ValueError("Must provide grouped indices and labels")
         grouped_indices = None
         grouped_labels = None
     # get the index of "Correct"  in the labels list
@@ -517,9 +518,8 @@ def main():
         
 
     if training_args.do_train:
-        if "train" not in raw_datasets:
-            raise ValueError("--do_train requires a train dataset")
-        train_dataset = raw_datasets["train"]
+        data_path = "/scratch/gua/Documents2/apps/train_partials_introductory_dedup"
+        train_dataset = load_from_disk(data_path)
         if data_args.max_train_samples is not None:
             train_dataset = train_dataset.select(range(data_args.max_train_samples))
         train_dataset = train_dataset.map(
@@ -530,21 +530,17 @@ def main():
             num_proc = 64,
         )
 
-    import os
-    from datasets import load_dataset, concatenate_datasets
-    data_path = "/scratch/gua/Documents2/apps"
-    data_files_cont = {"cont": os.path.join(data_path, "val_contrastive_metric.json")}
-    data_files_acc = {"acc": os.path.join(data_path, "val_acc_metric.json")}
-
-    vc = load_dataset("json", data_files=data_files_cont)
-    va = load_dataset("json", data_files=data_files_acc)
-    va = va.remove_columns(["percentage"])
-    eval_dataset = concatenate_datasets([vc["cont"], va["acc"]])
 
     if training_args.do_eval:
-        # if "validation" not in raw_datasets :
-        #     raise ValueError("--do_eval requires a validation dataset")
-        # eval_dataset = raw_datasets["validation"]
+        data_path = "/scratch/gua/Documents2/apps"
+        data_files_cont = {"cont": os.path.join(data_path, "val_contrastive_metric.json")}
+        data_files_acc = {"acc": os.path.join(data_path, "val_acc_metric.json")}
+
+        vc = load_dataset("json", data_files=data_files_cont)
+        va = load_dataset("json", data_files=data_files_acc)
+        va = va.remove_columns(["percentage"])
+        eval_dataset = concatenate_datasets([vc["cont"], va["acc"]])
+
         if data_args.max_eval_samples is not None:
             eval_dataset = eval_dataset.select(range(data_args.max_eval_samples))
         eval_dataset = eval_dataset.map(
