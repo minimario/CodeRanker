@@ -27,6 +27,7 @@ from reindent import run as run_reindent
 import io
 import pdb
 import scipy
+import wandb
 
 from generate_partial import create_extended_dataset, create_grouped_indices
 
@@ -321,6 +322,9 @@ def main():
 
     parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments))
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
+    training_args.report_to = ["wandb"]
+    all_args = {**vars(model_args), **vars(data_args), **vars(training_args)}
+    wandb.init(project="huggingface", entity="codegen", config=all_args)
    
     # Setup logging
     logging.basicConfig(
