@@ -208,7 +208,6 @@ def compute_metrics_new(p, grouped_indices=None, grouped_labels=None):
 
     return metrics
 
-
 def compute_metrics(p: EvalPrediction, compute_ranker_accuracy=False, grouped_indices=None, grouped_labels=None, pass_idx=1, num_labels=3):
     # grouped_indices is a two-dimensional array where each row represents the indices 
     # of various datapoints in p that have the same prompt 
@@ -323,6 +322,9 @@ def main():
 
     parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments))
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
+    training_args.report_to = ["wandb"]
+    all_args = {**vars(model_args), **vars(data_args), **vars(training_args)}
+    wandb.init(project="huggingface", entity="codegen", config=all_args)
    
     # Setup logging
     logging.basicConfig(
@@ -344,6 +346,7 @@ def main():
         + f"distributed training: {bool(training_args.local_rank != -1)}, 16-bits training: {training_args.fp16}"
     )
     logger.info(f"Training/evaluation parameters {training_args}")
+    print(data_args)
 
     # Set seed before initializing model.
     set_seed(training_args.seed)
@@ -521,7 +524,7 @@ def main():
         
 
     if training_args.do_train:
-        data_path = "/home/gridsan/agu/Documents/apps/train_partials_introductory_dedup"
+        data_path = "/home/gridsan/agu/Documents/apps/train_full_introductory_dedup"
         # data_path = "/scratch/gua/Documents2/apps/train_partials_introductory_dedup"
         train_dataset = load_from_disk(data_path)
         if data_args.max_train_samples is not None:
@@ -705,5 +708,3 @@ def main():
    
 if __name__ == "__main__":
     main()
-    # initialize wandb
-    
