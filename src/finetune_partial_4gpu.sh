@@ -34,7 +34,7 @@ python3 run_seq_classification_partial.py \
     --learning_rate 1e-4 \
     --warmup_steps 1000 \
     --weight_decay 0.01 \
-    --gradient_accumulation_steps 8 \
+    --gradient_accumulation_steps 2 \
     --num_train_epochs 10 \
     --evaluation_strategy steps \
     --save_strategy steps \

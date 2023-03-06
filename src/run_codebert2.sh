@@ -1,0 +1,14 @@
+python3 run_codebert.py \
+    --model_name_or_path asdf \
+    --output_dir ranker_2 \
+    --do_train \
+    --do_eval \
+    --per_device_train_batch_size 128 \
+    --num_train_epochs 10 \
+    --save_strategy steps \
+    --save_steps 200 \
+    --eval_steps 50 \
+    --evaluation_strategy steps \
+    --learning_rate 1e-4 \
+    --logging_strategy steps \
+    --logging_steps 5 \
