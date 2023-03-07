@@ -159,13 +159,13 @@ class ModelArguments:
         },
     )
 
-def compute_metrics_new(p, grouped_indices=None, grouped_labels=None):
+def compute_metrics_new(p, grouped_indices=None, grouped_labels=None, pass_idx=1):
     pred_raw, labels = p
 
     # calculate contrastive accuracy
     cont_preds = pred_raw[0:2622]
     pred_softmax = scipy.special.softmax(cont_preds, axis=1)
-    pred_prob = pred_softmax[:, 1].reshape(-1, 2)
+    pred_prob = pred_softmax[:, pass_idx].reshape(-1, 2)
     pred_max = np.argmax(pred_prob, axis=1)
     correct = np.count_nonzero(pred_max == 0)
     total = pred_prob.shape[0]
@@ -174,7 +174,7 @@ def compute_metrics_new(p, grouped_indices=None, grouped_labels=None):
     # calculate ll
     acc_preds = pred_raw[2622:]
     pred_softmax = scipy.special.softmax(acc_preds, axis=1)
-    pred_prob = pred_softmax[:, 1]
+    pred_prob = pred_softmax[:, pass_idx]
     prob_fun = lambda x: pred_prob[x] if x >=0 else 0 
     prob_fun = np.vectorize(prob_fun)
     grouped_prob = prob_fun(grouped_indices) # group prob predicted by task
@@ -524,6 +524,7 @@ def main():
 
     if training_args.do_train:
         data_path = "/scratch/gua/Documents2/apps/train_partials_introductory_dedup"
+        # data_path = "/scratch/gua/Documents2/apps/train_full_introductory_dedup"
         train_dataset = load_from_disk(data_path)
         if data_args.max_train_samples is not None:
             train_dataset = train_dataset.select(range(data_args.max_train_samples))
@@ -532,7 +533,7 @@ def main():
             batched=True,
             load_from_cache_file=not data_args.overwrite_cache,
             desc="Running tokenizer on train dataset",
-            num_proc = 64,
+            num_proc = os.cpu_count(),
         )
 
 
@@ -553,7 +554,7 @@ def main():
             batched=True,
             load_from_cache_file=not data_args.overwrite_cache,
             desc="Running tokenizer on eval dataset",
-            num_proc = 20,
+            num_proc = os.cpu_count(),
         )
             
 
@@ -568,7 +569,7 @@ def main():
             batched=True,
             load_from_cache_file=not data_args.overwrite_cache,
             desc="Running tokenizer on dataset",
-            num_proc = 20,
+            num_proc = os.cpu_count(),
         )
 
     # Log a few random samples from the training set:
@@ -594,7 +595,7 @@ def main():
             args=training_args,
             train_dataset=train_dataset if training_args.do_train else None,
             eval_dataset=eval_dataset if training_args.do_eval else None,
-            compute_metrics=lambda x: compute_metrics_new(x, grouped_indices, grouped_labels),
+            compute_metrics=lambda x: compute_metrics_new(x, grouped_indices, grouped_labels, pass_idx),
             tokenizer=tokenizer,
             data_collator=data_collator,
         )
@@ -604,7 +605,7 @@ def main():
             args=training_args,
             train_dataset=train_dataset if training_args.do_train else None,
             eval_dataset=eval_dataset if training_args.do_eval else None,
-            compute_metrics=lambda x: compute_metrics_new(x, grouped_indices, grouped_labels),
+            compute_metrics=lambda x: compute_metrics_new(x, grouped_indices, grouped_labels, pass_idx),
             tokenizer=tokenizer,
             data_collator=data_collator,
         )
@@ -669,7 +670,7 @@ def main():
         args=training_args,
         train_dataset=train_dataset if training_args.do_train else None,
         eval_dataset=eval_dataset if training_args.do_eval else None,
-        compute_metrics= lambda x: compute_metrics_new(x, grouped_indices, grouped_labels),
+        compute_metrics= lambda x: compute_metrics_new(x, grouped_indices, grouped_labels, pass_idx),
         tokenizer=tokenizer,
         data_collator=data_collator,
     )
