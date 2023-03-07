@@ -1,4 +1,3 @@
-
 import transformers
 from transformers import RobertaTokenizer, RobertaConfig, RobertaModel, RobertaForSequenceClassification
 
@@ -116,6 +115,10 @@ class DataTrainingArguments:
     label_key: Optional[str] = field(
         default="binary_label",
         metadata={"help": "Name of the key for label in the dataset" },
+    )
+    data_path : Optional[str] = field(
+        default=None,
+        metadata={"help": "data path (alex)" },
     )
 
     # def __post_init__(self):
@@ -304,12 +307,11 @@ def reindent_code(codestr, replace_set=[]):
 class CustomTrainer(Trainer):
     def set_weights(self, class_weights):
         self.class_weights = class_weights
+
     def compute_loss(self, model, inputs, return_outputs=False):
         labels = inputs.get("labels")
-        # forward pass
         outputs = model(**inputs)
         logits = outputs.get("logits")
-        # compute custom loss (labels with different weights)
         loss_fct = nn.CrossEntropyLoss(weight=torch.tensor(self.class_weights).to(logits.device))
         loss = loss_fct(logits.view(-1, self.model.config.num_labels), labels.view(-1))
         return (loss, outputs) if return_outputs else loss
@@ -346,6 +348,7 @@ def main():
         + f"distributed training: {bool(training_args.local_rank != -1)}, 16-bits training: {training_args.fp16}"
     )
     logger.info(f"Training/evaluation parameters {training_args}")
+    print(data_args)
 
     # Set seed before initializing model.
     set_seed(training_args.seed)
@@ -419,8 +422,9 @@ def main():
         class_weights = None 
     
     # Load pretrained model and tokenizer
-    tokenizer = RobertaTokenizer.from_pretrained(model_args.model_name_or_path, cache_dir=model_args.cache_dir, use_fast=model_args.use_fast_tokenizer,)    
-    model = RobertaForSequenceClassification.from_pretrained(model_args.model_name_or_path, num_labels=num_labels, cache_dir=model_args.cache_dir)
+    tokenizer = RobertaTokenizer.from_pretrained(model_args.model_name_or_path, use_fast=model_args.use_fast_tokenizer)    
+    model = RobertaForSequenceClassification.from_pretrained(model_args.model_name_or_path, num_labels=num_labels)
+    print("PT model loaded")
 
     # import pdb
     # pdb.set_trace()
@@ -523,11 +527,17 @@ def main():
         
 
     if training_args.do_train:
-        data_path = "/scratch/gua/Documents2/apps/train_partials_introductory_dedup"
-        # data_path = "/scratch/gua/Documents2/apps/train_full_introductory_dedup"
+        data_path = data_args.data_path
+        # data_path = "/home/gridsan/agu/Documents/apps/train_full_introductory_dedup"
+        # data_path = "/scratch/gua/Documents2/apps/train_partials_introductory_dedup"
+        data_path = "/om2/user/gua/Documents/apps/train_partials_introductory_dedup"
+
+        print("loading train dataset")
         train_dataset = load_from_disk(data_path)
+        # data_args.max_train_samples = 1000
         if data_args.max_train_samples is not None:
             train_dataset = train_dataset.select(range(data_args.max_train_samples))
+        print("selected train samples, starting map")
         train_dataset = train_dataset.map(
             preprocess_function,
             batched=True,
@@ -535,10 +545,14 @@ def main():
             desc="Running tokenizer on train dataset",
             num_proc = os.cpu_count(),
         )
+        print("finished tokenizing train dataset")
 
 
     if training_args.do_eval:
-        data_path = "/scratch/gua/Documents2/apps"
+        # data_path = "/home/gridsan/agu/Documents/apps"
+        # data_path = "/scratch/gua/Documents2/apps"
+        print("loading eval dataset")
+        data_path = "/om2/user/gua/Documents/apps"
         data_files_cont = {"cont": os.path.join(data_path, "val_contrastive_metric.json")}
         data_files_acc = {"acc": os.path.join(data_path, "val_acc_metric.json")}
 
@@ -549,6 +563,7 @@ def main():
 
         if data_args.max_eval_samples is not None:
             eval_dataset = eval_dataset.select(range(data_args.max_eval_samples))
+        print("selected eval samples, starting map")
         eval_dataset = eval_dataset.map(
             preprocess_function,
             batched=True,
@@ -556,6 +571,7 @@ def main():
             desc="Running tokenizer on eval dataset",
             num_proc = os.cpu_count(),
         )
+        print("finished loading eval dataset")
             
 
     if training_args.do_predict or data_args.test_file is not None:
