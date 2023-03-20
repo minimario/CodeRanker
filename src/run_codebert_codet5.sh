@@ -1,17 +1,16 @@
-python3 run_codebert.py \
+python3 run_codebert_codet5.py \
     --model_name_or_path asdf \
     --output_dir ranker_15 \
     --max_seq_length 512 \
     --do_train \
     --do_eval \
-    --per_device_train_batch_size 32 \
-    --gradient_accumulation_steps 16 \
+    --per_device_train_batch_size 8 \
     --num_train_epochs 10 \
     --save_strategy steps \
-    --save_steps 2000 \
-    --eval_steps 2000 \
+    --save_steps 200 \
+    --eval_steps 200 \
     --evaluation_strategy steps \
-    --learning_rate 1e-5 \
+    --learning_rate 1e-8 \
     --logging_strategy steps \
     --logging_steps 5 \
     --train_file /om2/user/gua/Documents/apps/codebert_datasets/full_dataset \

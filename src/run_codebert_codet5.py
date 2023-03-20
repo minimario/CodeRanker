@@ -10,18 +10,22 @@ import numpy as np
 import os
 
 from transformers import (
+    AutoConfig,
     TrainingArguments,
     HfArgumentParser,
     set_seed,
+    AutoTokenizer,
     RobertaTokenizer,
     RobertaForSequenceClassification,
     Trainer,
     EvalPrediction,
+    T5ForConditionalGeneration,
 )
 from transformers.trainer_utils import get_last_checkpoint
 
 from datasets import load_dataset, Dataset
 from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score
+from t5_encoder_classifier import T5EncoderForSequenceClassification
 
 
 def setup_wandb(model_args, data_args, training_args):
@@ -102,13 +106,14 @@ def main():
     set_seed(training_args.seed)
 
     # Load the model and tokenizer
-    model_args.model_name_or_path = "microsoft/codebert-base"
-    num_labels = 2
-    tokenizer = RobertaTokenizer.from_pretrained(
+    # model_args.model_name_or_path = "microsoft/codebert-base"
+    model_args.model_name_or_path = "Salesforce/codet5-large"
+    t5_config = AutoConfig.from_pretrained(model_args.model_name_or_path)
+    t5_config.num_labels = 2
+    t5_model = T5ForConditionalGeneration.from_pretrained(model_args.model_name_or_path)
+    model = T5EncoderForSequenceClassification(t5_model.encoder, t5_config)
+    tokenizer = AutoTokenizer.from_pretrained(
         model_args.model_name_or_path, use_fast=model_args.use_fast_tokenizer
-    )
-    model = RobertaForSequenceClassification.from_pretrained(
-        model_args.model_name_or_path, num_labels=num_labels
     )
     print("Model loaded!")
 
